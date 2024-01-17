@@ -414,6 +414,11 @@ export default {
     this.refreshPages();
   },
   mounted() {
+    const [currentPage] = this.pages;
+
+    this.setCurrentWeekByDay(new Date().getDate());
+    this.definePageTitle(currentPage);
+
     if (!this.disablePageSwipe) {
       // Add swipe handler to move to next and previous pages
       this.removeHandlers = addHorizontalSwipeHandler(
@@ -437,6 +442,33 @@ export default {
     if (this.removeHandlers) this.removeHandlers();
   },
   methods: {
+    definePageTitle(currentPage) {
+      const isFirstWeek = currentPage.currentWeek === 0;
+      const isLastWeek = currentPage.currentWeek === currentPage.lastWeek;
+      if (isFirstWeek && !currentPage.weekDays[0][0].inMonth) {
+        const currentDate = {
+          month: currentPage.month,
+          year: currentPage.year
+        };
+        const prevMonthDate = {
+          month: currentPage.prevMonthComps.month,
+          year: currentPage.prevMonthComps.year
+        };
+        currentPage.title = this.mixedWeekTitle(prevMonthDate, currentDate);
+      } else if (isLastWeek && !currentPage.weekDays[currentPage.lastWeek][6].inMonth) {
+        const currentDate = {
+          month: currentPage.month,
+          year: currentPage.year
+        };
+        const nextMonthDate = {
+          month: currentPage.nextMonthComps.month,
+          year: currentPage.nextMonthComps.year
+        };
+        currentPage.title = this.mixedWeekTitle(currentDate, nextMonthDate);
+      } else {
+        currentPage.title = this.$locale.format(new Date(currentPage.year, currentPage.month - 1, 15), this.$locale.masks.title);
+      }
+    },
     refreshLocale() {
       this.sharedState.locale = this.$locale;
       this.sharedState.masks = this.$locale.masks;
@@ -515,36 +547,7 @@ export default {
         const shouldMovePageWeek = this.adjustWeeklyPage(currentPage, opts.fromPage);
 
         if (shouldMovePageWeek) {
-          const isFirstWeek = currentPage.currentWeek === 0;
-          const isLastWeek = currentPage.currentWeek === currentPage.lastWeek;
-
-          if (isFirstWeek && !currentPage.weekDays[0][0].inMonth) {
-            const currentDate = {
-              month: currentPage.month,
-              year: currentPage.year
-            };
-
-            const prevMonthDate = {
-              month: currentPage.prevMonthComps.month,
-              year: currentPage.prevMonthComps.year
-            };
-
-            currentPage.title = this.mixedWeekTitle(prevMonthDate, currentDate);
-          } else if (isLastWeek && !currentPage.weekDays[currentPage.lastWeek][6].inMonth) {
-            const currentDate = {
-              month: currentPage.month,
-              year: currentPage.year
-            };
-
-            const nextMonthDate = {
-              month: currentPage.nextMonthComps.month,
-              year: currentPage.nextMonthComps.year
-            };
-
-            currentPage.title = this.mixedWeekTitle(currentDate, nextMonthDate);
-          } else {
-            currentPage.title = this.$locale.format(new Date(currentPage.year, currentPage.month - 1, 15), this.$locale.masks.title);
-          }
+          this.definePageTitle(currentPage);
 
           this.refreshAttrs(this.pages, this.store.list, null, true);
 
